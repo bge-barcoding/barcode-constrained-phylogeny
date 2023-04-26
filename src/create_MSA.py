@@ -30,4 +30,3 @@ if __name__ == '__main__':
     out_file_nt = snakemake.output[0]
     out_file_aa = snakemake.output[1]
     align_seq(in_file, out_file_nt, out_file_aa)
-    
