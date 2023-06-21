@@ -10,9 +10,13 @@ def replace_with_ott(cursor, alignment_input, alignment_output):
     """
     with open(alignment_output, "w") as output:
         for record in SeqIO.parse(alignment_input, "fasta"):
-            result = cursor.execute("SELECT taxon.opentol_id, barcode.barcode_id FROM taxon LEFT JOIN barcode ON"
-                                        " barcode.taxon_id = taxon.taxon_id WHERE barcode.barcode_id = {}".format(
-                                                                                                            record.id))
+            result = cursor.execute(
+                "SELECT taxon.opentol_id, barcode.barcode_id "
+                "FROM taxon "
+                "LEFT JOIN barcode ON barcode.taxon_id = taxon.taxon_id "
+                "WHERE "
+                "barcode.barcode_id = '{}'".format(record.id.split("|")[1]))
+            print(record.id.split("|"))
             results = result.fetchall()
             opentol_id = results[0][0]
             record.id = '{}_{}'.format(opentol_id, record.id)

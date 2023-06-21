@@ -3,13 +3,12 @@ import argparse
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
-from Bio.AlignIO import read as read_alignment, convert
+from Bio.AlignIO import read as read_alignment, convert, write
 from subprocess import run
 import tempfile
 
-logging.basicConfig(level=snakemake.params.log_level)  # noqa: F821
+logging.basicConfig(level="DEBUG")  # noqa: F821
 logger = logging.getLogger(__name__)
-fasta_dir = snakemake.params.fasta_dir  # noqa: F821
 
 
 def reverse_complement(record):
@@ -24,7 +23,7 @@ def align_score(hmmfile, seqfile, outfile):
     return alignment.column_annotations['posterior_probability']
 
 
-def main(args):
+def main(input, hmm, output):
     """
     Main function that aligns the sequences. At this stage of the pipeline, the input file consists of sequences that:
         - are all the same marker (for which an HMM is provided)
@@ -39,7 +38,7 @@ def main(args):
     """
 
     # Read the sequences from the input file
-    sequences = list(SeqIO.parse(args.input, 'fasta'))
+    sequences = list(SeqIO.parse(input, 'fasta'))
     best_alignments = []
     total_sequences = len(sequences)
 
@@ -50,11 +49,11 @@ def main(args):
 
             # Write the sequence to a temporary file and align it
             SeqIO.write([record], tempf.name, 'fasta')
-            score = align_score(args.hmm, tempf.name, 'temp.sto').count('*')
+            score = align_score(hmm, tempf.name, 'temp.sto').count('*')
 
             # Write the reverse complement to a temporary file and align it
             SeqIO.write([reverse_complement(record)], tempf_rc.name, 'fasta')
-            score_rc = align_score(args.hmm, tempf_rc.name, 'temp_rc.sto').count('*')
+            score_rc = align_score(hmm, tempf_rc.name, 'temp_rc.sto').count('*')
 
             # Choose the alignment with the higher score
             if score_rc > score:
@@ -67,19 +66,25 @@ def main(args):
         logging.info(f"Processed {i}/{total_sequences} sequences")
 
     # Convert the alignments to FASTA format and write them to the output file
-    with tempfile.NamedTemporaryFile(mode='w+') as tempf:
-        convert(best_alignments, 'stockholm', tempf.name, 'fasta')
-        with open(args.output, 'w') as out_f:
+    with tempfile.NamedTemporaryFile(mode='w+') as temp_msa, tempfile.NamedTemporaryFile(mode='w+') as tempf:
+        write(
+            best_alignments,
+            temp_msa.name,
+            'stockholm'
+        ),
+        convert(
+            temp_msa.name,
+            'stockholm',
+            tempf.name,
+            'fasta'
+        )
+        with open(output, 'w') as out_f:
             out_f.write(tempf.read())
 
 
-if __name__ == "__main__":
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Align sequences with HMMER')
-    parser.add_argument('--input', type=str, help='Input fasta file')
-    parser.add_argument('--output', type=str, help='Output fasta file')
-    parser.add_argument('--hmm', type=str, help='HMM file')
-    parser.add_argument('--loglevel', type=str, default='INFO', help='Log level (default: INFO)')
-    args = parser.parse_args()
+main(
+    snakemake.input[0],
+    snakemake.config["inputs"]["hmm"],
+    snakemake.output[0]
+)
 
-    main(args)

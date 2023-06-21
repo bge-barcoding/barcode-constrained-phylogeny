@@ -1,0 +1,18 @@
+# Either use COI-5P or matK_rbcL
+marker: COI-5P
+
+# Minimum length to include (this fits COI-5P)
+minlength: 600
+
+# Maximum number of sequences per alignment
+maxseq: 5000
+
+# Nucleotide alignments (NT) or aminoacid (AA) for MACSE alignment
+datatype: NT
+
+name: phylogeny
+
+opentol_url: https://files.opentreeoflife.org/synthesis/opentree13.4/opentree13.4tree.tgz
+bold_zip: data/BOLD_Public.03-Feb-2023.tar.gz
+hmm: data/hmm/COI-5P.hmm
+

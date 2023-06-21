@@ -3,13 +3,13 @@ import os
 import pandas as pd
 import logging
 
-logging.basicConfig(level=snakemake.params.log_level)  # noqa: F821
+logging.basicConfig(level="DEBUG")  # noqa: F821
 logger = logging.getLogger(__name__)
-fasta_dir = snakemake.params.fasta_dir  # noqa: F821
-maxseq = snakemake.params.maxseq  # noqa: F821
+fasta_dir = snakemake.output[0]  # noqa: F821
+maxseq = snakemake.config["maxseq"]  # noqa: F821
 
 
-def write_genera(family, fasta_dir, conn):
+def write_genera(family, conn):
     """
     See write_families. Here the same is done for distinct genera within the provided family.
     :param family:
@@ -32,7 +32,7 @@ def write_genera(family, fasta_dir, conn):
                                    conn, params=names)
 
         # Write data
-        logger.info("Write to FASTA genus: %s", genus)
+        logger.info("Writing to FASTA genus: %s", genus)
         file_name = f"{fasta_dir}/{family}-{genus}.fasta"
         with open(file_name, 'w') as f:
             for _, row in genseq.iterrows():
@@ -76,7 +76,7 @@ def write_families(conn):
                     f.write(line)
         else:
             logger.debug("Family %s has more than %s sequences", family, maxseq)
-            write_genera(family, fasta_dir, conn)
+            write_genera(family, conn)
 
 
 if __name__ == '__main__':

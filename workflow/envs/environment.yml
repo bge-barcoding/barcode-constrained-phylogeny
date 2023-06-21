@@ -6,8 +6,12 @@ channels:
 dependencies:
   - raxml-ng
   - hmmer
+  - sqlite
   - perl-bio-phylo-forest-dbtree
   - graphviz
   - pip
   - pip:
-    - -r requirements.txt  
+    - biopython
+    - numpy~=1.24.2
+    - pandas~=1.5.3
+    - requests~=2.28.2

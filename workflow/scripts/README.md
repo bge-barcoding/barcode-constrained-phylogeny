@@ -1,6 +1,4 @@
 ## Scripts
-### [unzip_targz.py](unzip_targz.py)
-- Unzips a targz file, more specifically a [datarelease](https://www.boldsystems.org/index.php/datapackage?id=BOLD_Public.30-Dec-2022) from BOLD Systems containing a snapshot of the barcode database (more than 8 million barcodes as of 30-DEC-2022).
 
 ### [bold_data_dump.py](bold_data_dump.py) 
 - Puts relevant BOLD data columns into a custom SQLite database.

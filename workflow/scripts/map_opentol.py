@@ -11,7 +11,7 @@ import numpy as np
 endpoint = "https://api.opentreeoflife.org/v3/tnrs/match_names"
 
 # Instantiate logger
-logging.basicConfig(level=snakemake.params.log_level)  # noqa: F821
+logging.basicConfig(level="DEBUG")  # noqa: F821
 logger = logging.getLogger(__name__)
 
 
@@ -74,6 +74,11 @@ def match_opentol(database, kingdom, chunksize, fuzzy):
     # Try all unmatched names in database in chunks
     conn = sqlite3.connect(database, isolation_level=None)
     cursor = conn.cursor()
+    cursor.execute('PRAGMA journal_mode=OFF')
+    cursor.execute('PRAGMA synchronous=OFF')
+    cursor.execute('PRAGMA cache_size=100000')
+    cursor.execute('PRAGMA temp_store = MEMORY')
+    conn.commit()
 
     # Create temporary table
     cursor.execute("""CREATE TABLE IF NOT EXISTS taxon_temp (
@@ -150,7 +155,7 @@ def postprocess_db(database):
 
 if __name__ == '__main__':
     temp_database_name = snakemake.input[0]  # noqa: F821
-    marker = snakemake.params.marker  # noqa: F821
+    marker = snakemake.config["marker"]  # noqa: F821
     database_file = snakemake.output[0]  # noqa: F821
 
     # Infer taxonomic context from marker name

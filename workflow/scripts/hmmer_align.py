@@ -4,7 +4,7 @@ import tempfile
 from Bio import SeqIO, AlignIO
 from Bio.AlignIO import read as read_alignment
 from subprocess import run
-logging.basicConfig(level=snakemake.params.log_level)  # noqa: F821
+logging.basicConfig(level="DEBUG")  # noqa: F821
 logger = logging.getLogger(__name__)
 
 # TODO add documentation and logging
@@ -25,6 +25,7 @@ def write_alignments(hmmfile, seqfile, outfile):
             count_1, alignment_original = align_score(r, hmmfile)
             r.seq = r.seq.reverse_complement()
             count_2, alignment_reverse = align_score(r, hmmfile)
+
             if count_1 >= count_2:
                 alignments.append(alignment_original)
             else:
@@ -49,8 +50,7 @@ def align_score(r, hmmfile):
 
 
 if __name__ == '__main__':
-    # TODO change to snakemake inputs
-    hmmfile = snakemake.params.hmm  # noqa: F821
+    hmmfile = snakemake.config["hmm"]  # noqa: F821
     in_file = snakemake.input[0]  # noqa: F821
     out_file = snakemake.output[0]  # noqa: F821
     write_alignments(hmmfile, in_file, out_file)

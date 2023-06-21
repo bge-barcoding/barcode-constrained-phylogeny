@@ -2,12 +2,14 @@ import csv
 import sqlite3
 import pandas as pd
 import logging
+import tarfile
+import codecs
 
-logging.basicConfig(level=snakemake.params.log_level)  # noqa: F821
+logging.basicConfig(level="DEBUG")  # noqa: F821
 logger = logging.getLogger(__name__)
 
 
-def extract_bold(conn, bold_tsv, marker, minlength):
+def extract_bold(conn, bold_tar_gz, marker, minlength):
     """
     Reads a TSV file with a snapshot of the BOLD database in chunks, selects rows that match the user's
     arguments for the desired marker, length, and kingdom, and writes them to two tables in the
@@ -17,8 +19,15 @@ def extract_bold(conn, bold_tsv, marker, minlength):
     :param marker: String representing the desired marker
     :param minlength: Integer representing minimum length of sequences to include
     """
+    tar = tarfile.open(bold_tar_gz)
+    # hopefully only one .tsv per archive!
+    bold_tsv_file = [e for e in tar.getmembers() if e.name.endswith('.tsv')][0]
+
+    utf8reader = codecs.getreader('UTF-8')
+    fp = utf8reader(tar.extractfile(bold_tsv_file))
+
     logger.info("Going to import BOLD data TSV")
-    for chunk in pd.read_csv(bold_tsv, quoting=csv.QUOTE_NONE,
+    for chunk in pd.read_csv(fp, quoting=csv.QUOTE_NONE,
                              low_memory=False, sep="\t", chunksize=10000):
 
         # Strip all '-' symbols out of the sequences, i.e. unalign them
@@ -124,18 +133,23 @@ def make_distinct(conn, cursor):
 
 if __name__ == '__main__':
     database = snakemake.output[0]  # noqa: F821
-    bold_tsv_file = snakemake.input[0]  # noqa: F821
-    marker_name = snakemake.params.marker  # noqa: F821
-    minimum_length = snakemake.params.minlength  # noqa: F821
+    bold_tar_gz_file = snakemake.input[0]  # noqa: F821
+    marker_name = snakemake.config["marker"]  # noqa: F821
+    minimum_length = snakemake.config["minlength"]  # noqa: F821
 
     # Make connection to the database
     connection = sqlite3.connect(database)
 
     # Create a cursor
     database_cursor = connection.cursor()
+    database_cursor.execute('PRAGMA journal_mode=OFF')
+    database_cursor.execute('PRAGMA synchronous=OFF')
+    database_cursor.execute('PRAGMA cache_size=100000')
+    database_cursor.execute('PRAGMA temp_store = MEMORY')
+    connection.commit()
 
     # Dump BOLD data into DB in temporary tables
-    extract_bold(connection, bold_tsv_file, marker_name, minimum_length)
+    extract_bold(connection, bold_tar_gz_file, marker_name, minimum_length)
 
     # Make new tables with different names
     make_tables(connection, database_cursor)
