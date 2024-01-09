@@ -28,7 +28,7 @@ def write_genera(family, fasta_dir, conn):
         # Fetch processid, not null opentol_id, distinct nucraw within genus
         names = (family, genus,)
         genseq = pd.read_sql_query("""
-            SELECT b.nucraw AS sequence, MIN(b.processid) AS processid, t.opentol_id
+            SELECT b.barcode_id, b.nucraw AS sequence, MIN(b.processid) AS processid, t.opentol_id, t.taxon
             FROM barcode b
             JOIN taxon t ON b.taxon_id = t.taxon_id
             WHERE t.family = ? AND t.genus = ? AND t.opentol_id IS NOT NULL
@@ -40,7 +40,7 @@ def write_genera(family, fasta_dir, conn):
         file_name = f"{fasta_dir}/{family}-{genus}.fasta"
         with open(file_name, 'w') as f:
             for _, row in genseq.iterrows():
-                line = f'>ott{row["opentol_id"]}|{row["processid"]}\n{row["sequence"]}\n'
+                line = f'>{row["barcode_id"]}|ott{row["opentol_id"]}|{row["processid"]}|{row["taxon"]}\n{row["sequence"]}\n'
                 f.write(line)
 
 
@@ -85,7 +85,7 @@ def write_families(conn, filter_level):
         logger.info("Writing to FASTA family: %s", family)
         famname = (family,)
         famseq = pd.read_sql_query("""
-            SELECT b.nucraw AS sequence, MIN(b.processid) AS processid, t.opentol_id
+            SELECT b.barcode_id, b.nucraw AS sequence, MIN(b.processid) AS processid, t.opentol_id, t.taxon
             FROM barcode b
             JOIN taxon t ON b.taxon_id = t.taxon_id
             WHERE t.family = ? AND t.opentol_id IS NOT NULL
@@ -97,13 +97,15 @@ def write_families(conn, filter_level):
             file_name = f"{fasta_dir}/{family}.fasta"
             with open(file_name, 'w') as f:
                 for _, row in famseq.iterrows():
-                    line = f'>ott{row["opentol_id"]}|{row["processid"]}\n{row["sequence"]}\n'
+                    # line = f'>ott{row["opentol_id"]}|{row["processid"]}\n{row["sequence"]}\n'
+                    line = f'>{row["barcode_id"]}|ott{row["opentol_id"]}|{row["processid"]}|{row["taxon"]}\n{row["sequence"]}\n'
                     f.write(line)
         elif len(famseq) <= minseq:
             file_name = f"{fasta_dir}/combined_families.fasta"
             with open(file_name, 'a+') as f:
                 for _, row in famseq.iterrows():
-                    line = f'>ott{row["opentol_id"]}|{row["processid"]}\n{row["sequence"]}\n'
+                    # line = f'>ott{row["opentol_id"]}|{row["processid"]}\n{row["sequence"]}\n'
+                    line = f'>{row["barcode_id"]}|ott{row["opentol_id"]}|{row["processid"]}|{row["taxon"]}\n{row["sequence"]}\n'
                     f.write(line)
         elif len(famseq) > maxseq:
             logger.debug("Family %s has more than %s sequences", family, maxseq)

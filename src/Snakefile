@@ -69,7 +69,7 @@ rule hmm_build:
 
 
 rule hmm_align:
-    input:  "../data/fasta/family/{family}.fasta"
+    input:  database_file, "../data/fasta/family/{family}.fasta"
     output: "../data/fasta/alignment/{{family}}_{}_hmm.fasta".format(datatype)
     params:
         log_level=config['log_level'],
@@ -87,10 +87,10 @@ rule get_opentree_zip:
 
 
 rule unique_otts:
-    input: "../data/fasta/alignment/{{family}}_{}_hmm.fasta".format(datatype)
+    input: "../data/fasta/family/{family}.fasta"
     output: "../data/ott_lists/{family}_otts.txt"
     threads: config["cpu_cores"]/2
-    shell: "cat {input} | egrep '>' | cut -f1 -d  '|' | cut -c 2- | sort -u > {output}"
+    shell: "cat {input} | egrep '>' | cut -f2 -d  '|' | sort -u > {output}"
 
 
 rule megatree_loader:
@@ -104,7 +104,7 @@ rule megatree_pruner:
     input: "../data/databases/opentree_nodes.db", "../data/ott_lists/{family}_otts.txt"
     output: "../data/newick/{family}_constraint_temp.nwk"
     threads: config["cpu_cores"]/2
-    shell: "megatree-pruner -d {input[0]} -i {input[1]} > {output}"
+    shell: "megatree-pruner -d {input[0]} -i {input[1]} | tr -d 'ott'  > {output}"
 
 
 rule edit_newick:
@@ -181,7 +181,7 @@ rule insert_backbone:
 
 
 rule all:
-    input: dynamic("../data/fasta/distance_matrix/{family}.txt")
+    input: dynamic("../data/raxml/{family}/{family}.raxml.bestTree")
     threads: config["cpu_cores"]
     shell: "touch {input}"
 
